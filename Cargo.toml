@@ -8,3 +8,8 @@ authors = ["Karl Ole Voß <ole.voss@posteo.de"]
 
 [dependencies]
 ca = { path = "ca" }
+bevy = "0.5.0"
+bevy_egui = "0.7.1"
+rand = "0.8.4"
+ron = "0.7.0"
+serde = "1.0.130"
