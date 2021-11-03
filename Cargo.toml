@@ -1,0 +1,10 @@
+[package]
+name = "ca-p"
+version = "0.0.1"
+edition = "2021"
+authors = ["Karl Ole Voß <ole.voss@posteo.de"]
+
+[workspace]
+
+[dependencies]
+ca = { path = "ca" }
