@@ -1,12 +1,8 @@
-use bevy::{
-    math::Vec2,
-    prelude::{Res, ResMut},
-    window::Windows,
-};
+use bevy::{math::Vec2, prelude::{Res, ResMut, State}, window::Windows};
 use bevy_egui::{EguiContext, egui::{self, Align2, Checkbox, DragValue, Layout, Pos2, plot::Text}};
 use ca::Dimension;
 
-use crate::{setup::{DEFAULT_X, DEFAULT_Y, DEFAULT_Z}, utils::{RuleStorage, simconfig::SimConfig}};
+use crate::{AppState, setup::{DEFAULT_X, DEFAULT_Y, DEFAULT_Z}, utils::{AppConfig, RuleStorage, simconfig::SimConfig}};
 
 
 pub const SIDE_PANEL_WIDTH: f32 = 200.0;
@@ -44,13 +40,14 @@ impl Default for UiState {
     }
 }
 
-pub fn ui_setup(
+pub fn draw_ui(
     egui_context: ResMut<EguiContext>,
+    app_state: Res<State<AppState>>,
     mut rules: ResMut<RuleStorage>,
-    mut ui_state: ResMut<UiState>,
     mut sim_config: ResMut<SimConfig>,
     _windows: Res<Windows>,
 ) {
+    // Draw config sidepanel
     egui::SidePanel::left("side_panel")
         .default_width(SIDE_PANEL_WIDTH)
         .resizable(false)
@@ -66,11 +63,12 @@ pub fn ui_setup(
                     .spacing([4.0, 4.0])
                     .striped(true)
                     .show(ui, |ui| {
-                        config_grid_content(ui, &mut rules, &mut ui_state, &mut sim_config);
+                        draw_config(ui, &mut rules, &mut ui_state, &mut sim_config, app_state.current());
                     });
             });
         });
 
+    // Draw simulation controls
     egui::Window::new("Simulation")
         .anchor(Align2::CENTER_TOP, [-200.0, 5.0])
         .collapsible(false)
@@ -83,40 +81,37 @@ pub fn ui_setup(
             });
         });
 
-    // debug infos
+    // Draw debug infos
+    // TODO find a better solution to drawing struct fields
     egui::Area::new("debug_info")
         .anchor(Align2::RIGHT_TOP, [-20.0, 20.0])
         .show(egui_context.ctx(), |ui| {
-            ui.label(format!("started: {}", sim_config.started));
-            ui.label(format!("running: {}", sim_config.running));
-            ui.label(format!("paused: {}", sim_config.paused));
-            ui.label(format!("size: {}x{}", sim_config.width, sim_config.height));
-            ui.label(format!("step: {}", sim_config.step));
-            ui.label(format!("max_steps: {}", sim_config.max_steps));
-            ui.label(format!("rule: {}", sim_config.rule.name));
-            ui.label(format!("noise: {}", sim_config.noise));
-            ui.label(format!("dimension: {:?}", sim_config.dimension));
+            ui.label(format!("app state: {:?}", app_state.current()));
         });
 }
 
-fn config_grid_content(
+fn draw_config(
     ui: &mut egui::Ui,
     rules: &mut RuleStorage,
-    ui_state: &mut UiState,
+    ui_state: &mut AppConfig,
     sim_config: &mut SimConfig,
+    app_state: &AppState,
 ) {
-    // ui.set_enabled(!sim_config.running && !sim_config.paused);
 
+    // Dimensions
     ui.label("Dimension");
     ui.horizontal(|ui| {
+        ui.set_enabled(config_is_enabled(app_state));
         ui.selectable_value(&mut ui_state.dim, Dimension::D1, "1D");
         ui.selectable_value(&mut ui_state.dim, Dimension::D2, "2D");
         ui.selectable_value(&mut ui_state.dim, Dimension::D3, "3D");
     });
     ui.end_row();
 
+    // Universe size
     ui.label("Size");
     ui.horizontal(|ui| {
+        ui.set_enabled(config_is_enabled(app_state));
         ui.label("x");
         ui.add(DragValue::new(&mut ui_state.x).clamp_range(10..=1000).speed(25));
         ui.scope(|ui| {
@@ -130,28 +125,19 @@ fn config_grid_content(
             ui.add(DragValue::new(&mut ui_state.z).clamp_range(10..=1000).speed(25));
         });
     });
-
     ui.end_row();
 
-    ui.label("");
-    ui.scope(|ui| {
-        ui.set_enabled(!sim_config.running && !sim_config.paused);
-        ui.add(egui::Checkbox::new(&mut ui_state.use_noise, "Use noise"));
-    });
-    ui.end_row();
-
+    // Universe population
     ui.label("Noise");
     ui.scope(|ui| {
+        ui.set_enabled(config_is_enabled(app_state));
         ui.set_visible(ui_state.use_noise);
         ui.set_enabled(ui_state.use_noise);
         ui.add(egui::Slider::new(&mut ui_state.noise, 0.0..=1.0));
     });
     ui.end_row();
 
-    ui.label("Max steps");
-    ui.add(egui::Slider::new(&mut sim_config.max_steps, 0..=10));
-    ui.end_row();
-
+    // Automata rules
     ui.label("Rule");
     egui::ComboBox::from_label("")
         .selected_text(&sim_config.rule.name)
@@ -161,4 +147,11 @@ fn config_grid_content(
             }
         });
     ui.end_row();
+}
+
+fn config_is_enabled(app_config: &AppConfig) -> bool {
+    match app_state {
+        AppState::Configuration => true,
+        AppState::Simulation => false,
+    }
 }

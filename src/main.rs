@@ -1,5 +1,5 @@
 mod ui;
-use ui::ui_setup;
+use ui::draw_ui;
 
 mod utils;
 mod setup;
@@ -16,6 +16,7 @@ fn main() {
 
         .add_startup_system(setup::setup.system())
         .add_system(ui_setup.system())
+        .add_system(draw_ui.system())
 
         .insert_resource(WindowDescriptor {
             title: "Cellular Automata - Playground".to_string(),
