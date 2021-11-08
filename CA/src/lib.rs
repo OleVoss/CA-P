@@ -49,7 +49,7 @@ impl CellularAutomata {
 
 // CA
 impl CellularAutomata {
-    fn reset_world(&mut self) {
+    pub fn reset_world(&mut self) {
         let cell_count: i32 = self.shape.iter().filter(|axis| *axis != 0).product();
         self.world = vec![0; cell_count as usize];
     }
@@ -86,9 +86,9 @@ impl Rule {
 }
 
 pub struct Shape {
-    x: i32, 
-    y: i32, 
-    z: i32,
+    pub x: i32, 
+    pub y: i32, 
+    pub z: i32,
 }
 
 impl Shape {

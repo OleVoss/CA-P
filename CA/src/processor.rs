@@ -1,6 +1,6 @@
 use super::{Dimension, CellularAutomata, Shape};
 
-pub fn step(mut ca: CellularAutomata) -> CellularAutomata {
+pub fn step(ca: &mut CellularAutomata) {
     let world_buffer = ca.world.clone();
 
     for (i, cell) in world_buffer.iter().enumerate() {
@@ -17,9 +17,7 @@ pub fn step(mut ca: CellularAutomata) -> CellularAutomata {
         } else {
             ca.world[i] = 0;
         }
-    }
-
-    ca 
+    };
 }
 
 fn d1_neighbours(world: &[u8], index: usize) -> u8 {

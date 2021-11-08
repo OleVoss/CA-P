@@ -1,3 +1,4 @@
+use bevy::math::Vec3;
 use ca::{Dimension, Rule};
 
 use crate::setup::{DEFAULT_X, DEFAULT_Y};
@@ -11,8 +12,7 @@ pub struct SimConfig {
     pub step: i32,
     pub use_noise: bool,
     pub dimension: Dimension,
-    pub height: i32,
-    pub width: i32,
+    pub size: Vec3,
 }
 
 impl Default for SimConfig {
@@ -31,8 +31,7 @@ impl Default for SimConfig {
             step: 0,
             use_noise: false,
             dimension: Dimension::D2,
-            height: DEFAULT_Y as i32,
-            width: DEFAULT_X as i32,
+            size: Vec3::new(DEFAULT_X as f32, DEFAULT_Y as f32, 0.),
         }
     }
 }

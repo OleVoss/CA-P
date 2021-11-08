@@ -1,9 +1,17 @@
-use bevy::{math::Vec2, prelude::{Res, ResMut, State}, window::Windows};
-use bevy_egui::{EguiContext, egui::{self, Align2, Checkbox, DragValue, Layout, Pos2, plot::Text}};
-use ca::Dimension;
+use bevy::{math::{Vec2, Vec3}, prelude::{Res, ResMut, State}, window::Windows};
+use bevy_egui::{
+    egui::{self, plot::Text, Align2, Checkbox, DragValue, Layout, Pos2},
+    EguiContext,
+};
+use ca::{Dimension, Rule};
 
-use crate::{AppState, setup::{DEFAULT_X, DEFAULT_Y, DEFAULT_Z}, utils::{AppConfig, RuleStorage, simconfig::SimConfig}};
-
+use crate::{
+    setup::{DEFAULT_X, DEFAULT_Y, DEFAULT_Z},
+    utils::{
+        simconfig::{self, SimConfig},
+        RuleStorage,
+    },
+};
 
 pub const SIDE_PANEL_WIDTH: f32 = 200.0;
 
@@ -16,10 +24,8 @@ pub struct UiState {
     pub reset: bool,
     pub noise: f32,
     pub use_noise: bool,
-    pub size: Vec2,
-    pub x: i32,
-    pub y: i32,
-    pub z: i32,
+    pub size: Vec3,
+    pub zoom_level: f32,
 }
 
 impl Default for UiState {
@@ -32,18 +38,16 @@ impl Default for UiState {
             reset: false,
             noise: 0.0,
             use_noise: false,
-            size: Vec2::new(DEFAULT_X as f32, DEFAULT_Y as f32),
-            x: DEFAULT_X as i32,
-            y: DEFAULT_Y as i32,
-            z: DEFAULT_Z as i32,
+            size: Vec3::new(DEFAULT_X as f32, DEFAULT_Y as f32, 0.),
+            zoom_level: 1.,
         }
     }
 }
 
 pub fn draw_ui(
     egui_context: ResMut<EguiContext>,
-    app_state: Res<State<AppState>>,
     mut rules: ResMut<RuleStorage>,
+    mut ui_state: ResMut<UiState>,
     mut sim_config: ResMut<SimConfig>,
     _windows: Res<Windows>,
 ) {
@@ -63,7 +67,7 @@ pub fn draw_ui(
                     .spacing([4.0, 4.0])
                     .striped(true)
                     .show(ui, |ui| {
-                        draw_config(ui, &mut rules, &mut ui_state, &mut sim_config, app_state.current());
+                        draw_config(ui, &mut rules, &mut ui_state, &mut sim_config);
                     });
             });
         });
@@ -86,22 +90,20 @@ pub fn draw_ui(
     egui::Area::new("debug_info")
         .anchor(Align2::RIGHT_TOP, [-20.0, 20.0])
         .show(egui_context.ctx(), |ui| {
-            ui.label(format!("app state: {:?}", app_state.current()));
+            ui.label(format!("dimension: {:?}", ui_state.dim));
         });
 }
 
 fn draw_config(
     ui: &mut egui::Ui,
     rules: &mut RuleStorage,
-    ui_state: &mut AppConfig,
+    ui_state: &mut UiState,
     sim_config: &mut SimConfig,
-    app_state: &AppState,
 ) {
-
     // Dimensions
     ui.label("Dimension");
     ui.horizontal(|ui| {
-        ui.set_enabled(config_is_enabled(app_state));
+        ui.set_enabled(!sim_config.running);
         ui.selectable_value(&mut ui_state.dim, Dimension::D1, "1D");
         ui.selectable_value(&mut ui_state.dim, Dimension::D2, "2D");
         ui.selectable_value(&mut ui_state.dim, Dimension::D3, "3D");
@@ -111,26 +113,40 @@ fn draw_config(
     // Universe size
     ui.label("Size");
     ui.horizontal(|ui| {
-        ui.set_enabled(config_is_enabled(app_state));
+        ui.set_enabled(!sim_config.running);
         ui.label("x");
-        ui.add(DragValue::new(&mut ui_state.x).clamp_range(10..=1000).speed(25));
-        ui.scope(|ui| {
-            ui.set_visible(ui_state.dim != Dimension::D1);
-            ui.label("y");
-            ui.add(DragValue::new(&mut ui_state.y).clamp_range(10..=1000).speed(25));
-        });
-        ui.scope(|ui| {
-            ui.set_visible(ui_state.dim == Dimension::D3);
-            ui.label("z");
-            ui.add(DragValue::new(&mut ui_state.z).clamp_range(10..=1000).speed(25));
-        });
+        ui.add(
+            DragValue::new(&mut ui_state.size.x)
+                .clamp_range(10..=1000)
+                .speed(25),
+        );
+        if ui_state.dim != Dimension::D1 {
+            ui.scope(|ui| {
+                ui.label("y");
+                ui.add(
+                    DragValue::new(&mut ui_state.size.y)
+                        .clamp_range(10..=1000)
+                        .speed(25),
+                );
+            });
+        }
+        if ui_state.dim == Dimension::D3 {
+            ui.scope(|ui| {
+                ui.label("z");
+                ui.add(
+                    DragValue::new(&mut ui_state.size.z)
+                        .clamp_range(10..=1000)
+                        .speed(25),
+                );
+            });
+        }
     });
     ui.end_row();
 
     // Universe population
     ui.label("Noise");
     ui.scope(|ui| {
-        ui.set_enabled(config_is_enabled(app_state));
+        ui.set_enabled(!sim_config.running);
         ui.set_visible(ui_state.use_noise);
         ui.set_enabled(ui_state.use_noise);
         ui.add(egui::Slider::new(&mut ui_state.noise, 0.0..=1.0));
@@ -146,12 +162,4 @@ fn draw_config(
                 ui.selectable_value(&mut sim_config.rule, rule.clone(), rule.name.clone());
             }
         });
-    ui.end_row();
-}
-
-fn config_is_enabled(app_config: &AppConfig) -> bool {
-    match app_state {
-        AppState::Configuration => true,
-        AppState::Simulation => false,
-    }
 }
