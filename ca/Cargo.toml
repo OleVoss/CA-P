@@ -1,0 +1,8 @@
+[package]
+name = "ca"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+ndarray = "0.15.3"
+serde = "1.0.130"
