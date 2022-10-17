@@ -1,6 +1,8 @@
 use bevy::render::render_resource::{Extent3d, Texture, TextureDimension, TextureFormat};
-use bevy::render::texture;
+use bevy::render::texture::ImageSampler;
+use bevy::render::{color, texture};
 use bevy::{input::mouse::MouseWheel, prelude::*};
+use bevy_egui::egui::ImageData::Color;
 use ca::{CellularAutomata, Shape};
 
 use crate::{
@@ -15,7 +17,7 @@ pub struct D2UniverseImage(pub Handle<Image>);
 pub fn d2_enter(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     commands.insert_resource(CellularAutomata::default());
 
-    let image = images.add(Image::new(
+    let mut temp_img = Image::new(
         Extent3d {
             width: DEFAULT_X as u32,
             height: DEFAULT_Y as u32,
@@ -24,7 +26,10 @@ pub fn d2_enter(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
         TextureDimension::D2,
         vec![255; DEFAULT_X * DEFAULT_Y * 4],
         TextureFormat::Rgba8Unorm,
-    ));
+    );
+    temp_img.sampler_descriptor = ImageSampler::nearest();
+
+    let image = images.add(temp_img);
     commands.insert_resource(D2UniverseImage(image.clone()));
 
     // create material
@@ -79,11 +84,11 @@ pub fn resize_to_zoom_level(
 ) {
     // TODO zoom to cursor
     if let Some(event) = mouse_wheel_events.iter().last() {
-        for (mut sprite, mut _transform) in query.iter_mut() {
-            if let Some(mut size) = sprite.custom_size {
-                size.x = (size.x + (size.x * 0.25 * event.y)).max(50.);
-                size.y = (size.y + (size.y * 0.25 * event.y)).max(50.);
-            }
+        info!("Tried to zoom on sprite");
+        for (mut _sprite, mut transform) in query.iter_mut() {
+            info!("{:#?}", transform);
+            transform.scale.x = (transform.scale.x + (transform.scale.x * 0.25 * event.y)).min(50.);
+            transform.scale.y = (transform.scale.y + (transform.scale.y * 0.25 * event.y)).min(50.);
         }
     }
 }
@@ -100,23 +105,24 @@ pub fn resize_listener(
         let image = images.get_mut(&universe_texture.0.clone()).unwrap();
 
         image.data.clear();
-        image.data.resize(
-            sim_config.size.x as usize * sim_config.size.y as usize * 4,
-            255,
-        );
-
-        // TODO: check if that was important
-        //image.size = Extent3d::new(sim_config.size.x as u32, sim_config.size.y as u32, 1);
+        image.resize(Extent3d {
+            width: sim_config.size.x as u32,
+            height: sim_config.size.y as u32,
+            depth_or_array_layers: 1,
+        });
+        // alpha value has to be set to 255; hence the repopulation; rgb values are reset in update loop
+        image.data = vec![255; (sim_config.size.x * sim_config.size.y * 4.) as usize];
 
         ca.world = vec![0; sim_config.size.x as usize * sim_config.size.y as usize];
         ca.shape = Shape::new(sim_config.size.x as i32, sim_config.size.y as i32, 0);
 
-        if let Ok(mut sprite) = query.get_single_mut() {
-            if let Some(mut size) = sprite.custom_size {
-                size.x = sim_config.size.x;
-                size.y = sim_config.size.y;
-            }
-        }
+        // TODO: not sure if that was important; works without it tho
+        // if let Ok(mut sprite) = query.get_single_mut() {
+        //     if let Some(mut size) = sprite.custom_size {
+        //         size.x = sim_config.size.x;
+        //         size.y = sim_config.size.y;
+        //     }
+        // }
     }
 }
 

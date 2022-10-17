@@ -17,8 +17,6 @@ pub fn setup(mut commands: Commands) {
     // ui state
     commands.insert_resource(UiState::default());
     commands.insert_resource(CellularAutomata::default());
-    commands.insert_resource(ImageSettings::default_nearest());
-    commands.insert_resource(FilterMode::Linear);
 
     // crate rules
     let storage_string = include_str!("../assets/rules.ron");
