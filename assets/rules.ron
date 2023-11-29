@@ -30,11 +30,5 @@ RuleStorage (
                 birth: [3],
                 survival: [2, 3],
             ),
-            Rule (
-                name: "ganggang",
-                dimension: D2,
-                birth: [4],
-                survival: [2, 3, 5, 7],
-            ),
         ],
     )

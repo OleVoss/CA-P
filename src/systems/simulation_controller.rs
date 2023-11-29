@@ -22,6 +22,6 @@ pub fn init_noise(
     ui_state: Res<UiState>,
 ) {
     if input.just_pressed(KeyCode::N) {
-        ca.world = generate_noise_universe(0.3, ui_state.size);
+        ca.world = generate_noise_universe(ui_state.noise, ui_state.size);
     }
 }

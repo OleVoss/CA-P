@@ -41,7 +41,7 @@ impl Default for UiState {
             pause: false,
             reset: false,
             noise: 0.0,
-            use_noise: false,
+            use_noise: true,
             size: Vec3::new(DEFAULT_X as f32, DEFAULT_Y as f32, 0.),
             zoom_level: 1.,
         }
