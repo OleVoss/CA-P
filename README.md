@@ -5,7 +5,7 @@ dimensions. The applicaion is written in **rust** using the **bevy gameengine**.
 
 Since the project is used to practice and explore the language and framework, development is dependent on time and
 interest in the topic. Therefore the state of the simulation is very fundamental and not really useful.
----
+
 ### Usage
 
 To run the application just clone the repo and start it with `cargo run`.
